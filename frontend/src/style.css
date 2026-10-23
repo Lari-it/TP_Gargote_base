@@ -331,3 +331,63 @@ button:focus-visible, input:focus-visible, select:focus-visible, tr:focus-visibl
   font-size: 0.9rem;
   color: var(--gris);
 }
+
+/* 12. Niveau 2 - Styles ---------------------------------------- */
+.filtres {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.badge-en_cours {
+  background: var(--fond-erreur);
+  color: var(--piment);
+}
+.badge-en_preparation {
+  background: #fff3cd;
+  color: #856404;
+}
+.badge-servie {
+  background: var(--fond-succes);
+  color: var(--feuille);
+}
+.badge-payee {
+  background: #d1e7dd;
+  color: #0f5132;
+}
+
+.statut-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.actions-statut {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tables {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: var(--espace);
+}
+.table-bouton {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon);
+  background: var(--papier);
+  font-weight: 600;
+}
+.table-bouton:hover {
+  background: var(--fond);
+}
+.table-bouton.actif {
+  background: var(--moutarde);
+  color: var(--encre);
+  border-color: var(--moutarde);
+}
