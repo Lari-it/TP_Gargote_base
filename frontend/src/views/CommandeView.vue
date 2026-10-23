@@ -6,16 +6,27 @@ import Panier from '../components/Panier.vue'
 import PlatDuJour from '../components/PlatDuJour.vue'
 
 const plats = ref([])
-const panier = ref([]) // [ { plat, quantite } ]
+const panier = ref([])
 const numeroTable = ref('')
+const serveurs = ref([])
+const idServeur = ref('')
 const message = ref(null)
 const erreurs = ref({})
+const parametres = ref(null)
 
 const groupes = computed(() => parCategorie(plats.value))
 
 onMounted(async () => {
-  plats.value = await api.plats.lister()
+  ;[plats.value, serveurs.value, parametres.value] = await Promise.all([
+    api.plats.lister(),
+    api.serveurs.lister(),
+    api.parametres.lire(),
+  ])
 })
+
+function choisirTable(n) {
+  numeroTable.value = numeroTable.value === n ? '' : n
+}
 
 function ajouter(plat) {
   const ligne = panier.value.find((l) => l.plat.id === plat.id)
@@ -76,11 +87,28 @@ async function envoyer() {
     <form class="panneau" @submit.prevent="envoyer">
       <h2>Commande en cours</h2>
 
-      <label class="champ champ-court">
-        <span>Table n°</span>
-        <input v-model.number="numeroTable" type="number" min="1" />
-        <small v-if="erreurs.numero_table" class="erreur">{{ erreurs.numero_table }}</small>
+      <label class="champ">
+        <span>Serveur</span>
+        <select v-model.number="idServeur">
+          <option value="">Choisir…</option>
+          <option v-for="s in serveurs" :key="s.id" :value="s.id">{{ s.nom }}</option>
+        </select>
       </label>
+
+      <div class="tables">
+        <span>Table :</span>
+        <button
+          v-for="n in (parametres?.tables || 12)"
+          :key="n"
+          type="button"
+          class="table-bouton"
+          :class="{ actif: numeroTable === n }"
+          @click="choisirTable(n)"
+        >
+          {{ n }}
+        </button>
+      </div>
+      <small v-if="erreurs.numero_table" class="erreur">{{ erreurs.numero_table }}</small>
 
       <Panier :lignes="panier" @plus="ajouter($event.plat)" @moins="retirer" />
       <small v-if="erreurs.lignes" class="erreur">{{ erreurs.lignes }}</small>

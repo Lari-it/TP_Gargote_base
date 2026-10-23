@@ -46,14 +46,27 @@ export const api = {
   },
 
   commandes: {
-    lister: () => requete('GET', '/commandes'),
+    lister: (queryString = '') => requete('GET', `/commandes${queryString}`),
     detail: (id) => requete('GET', `/commandes/${id}`),
     creer: (commande) => requete('POST', '/commandes', commande),
+    changerStatut: (id, statut) => requete('PUT', `/commandes/${id}/statut`, { statut }),
   },
 
   platDuJour: {
     lire: () => requete('GET', '/plat-du-jour'),
     definir: (idPlat) => requete('PUT', '/plat-du-jour', { id_plat: idPlat }),
     historique: () => requete('GET', '/plat-du-jour/historique'),
+  },
+
+  parametres: {
+    lire: () => requete('GET', '/parametres'),
+  },
+
+  serveurs: {
+    lister: () => requete('GET', '/serveurs'),
+  },
+
+  commandes: {
+    changerStatut: (id, statut) => requete('PUT', `/commandes/${id}/statut`, { statut }),
   },
 }

@@ -1,15 +1,24 @@
 <script setup>
 import { ariary, dateHeure } from '../utils/format'
+import StatutBadge from './StatutBadge.vue'
+import ActionsStatut from './ActionsStatut.vue'
 
-defineProps({
+const props = defineProps({
   commande: { type: Object, required: true },
 })
+
+const emit = defineEmits(['change'])
 </script>
 
 <template>
   <article class="panneau ticket">
     <h2>Commande n° {{ commande.id }}</h2>
     <p class="ticket-info">Table {{ commande.numero_table }}, {{ dateHeure(commande.date_commande) }}</p>
+    
+    <div class="statut-container">
+      <StatutBadge :statut="commande.statut" />
+      <ActionsStatut :commande="commande" @change="emit('change')" />
+    </div>
 
     <table class="tableau">
       <thead>
