@@ -7,6 +7,7 @@ use App\Exceptions\RegleMetierException;
 use App\Models\CommandeLigneModel;
 use App\Models\CommandeModel;
 use App\Models\PlatModel;
+use App\Services\StockService;
 
 /**
  * Le CODE MÉTIER des commandes vit ici, pas dans le contrôleur.
@@ -95,6 +96,9 @@ class CommandeService
                 'quantite'      => $quantite,
                 'prix_unitaire' => (int) $plat['prix'],
             ];
+
+            $stockService = new StockService();
+            $stockService->verifierStockPourPlat($idPlat, $quantite);
         }
 
         if ($numeroTable > 0) {
@@ -161,6 +165,11 @@ class CommandeService
                 ['statut' => 'Statut non autorisé.'],
                 422
             );
+        }
+
+        if ($nouveauStatut === 'servie' && $statutActuel !== 'servie') {
+            $stockService = new StockService();
+            $stockService->consommerPourCommande($idCommande);
         }
 
         $commandeModel->update($idCommande, ['statut' => $nouveauStatut]);

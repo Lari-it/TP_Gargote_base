@@ -37,4 +37,10 @@ $routes->group('api', ['namespace' => 'App\Controllers\Api'], static function ($
     $routes->get('commandes/(:num)', 'Commandes::show/$1');
     $routes->post('commandes', 'Commandes::create');
     $routes->put('commandes/(:num)/statut', 'Commandes::changerStatut/$1');
+
+    // Stock
+    $routes->get('stock', 'Stock::index');
+
+    // Statistiques
+    $routes->get('stats', 'Stats::index');
 });
