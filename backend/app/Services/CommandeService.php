@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Config\Gargote;
 use App\Exceptions\RegleMetierException;
 use App\Models\CommandeLigneModel;
 use App\Models\CommandeModel;
@@ -34,6 +35,12 @@ class CommandeService
             ]);
         }
 
+        if ($numeroTable < 1 || $numeroTable > Gargote::$tables) {
+            throw new RegleMetierException('Numéro de table invalide.', [
+                'numero_table' => "La table doit être entre 1 et " . Gargote::$tables . ".",
+            ]);
+        }
+
         if (! is_array($lignes) || $lignes === []) {
             throw new RegleMetierException('La commande est vide.', [
                 'lignes' => 'Ajoutez au moins un plat.',
@@ -44,6 +51,8 @@ class CommandeService
 
         // On prépare les lignes en récupérant le prix ACTUEL de chaque plat.
         $lignesPretes = [];
+        $quantitesParPlat = [];
+        
         foreach ($lignes as $i => $ligne) {
             $plat = $plats->find($ligne['id_plat'] ?? 0);
             if ($plat === null) {
@@ -52,11 +61,56 @@ class CommandeService
                 ]);
             }
 
+            if (! $plat['disponible']) {
+                throw new RegleMetierException(
+                    "Le {$plat['nom']} est épuisé.",
+                    ["lignes.$i.id_plat" => 'Ce plat est épuisé.'],
+                    409
+                );
+            }
+
+            $quantite = (int) ($ligne['quantite'] ?? 1);
+            if ($quantite < 1) {
+                throw new RegleMetierException('Quantité invalide.', [
+                    "lignes.$i.quantite" => 'La quantité doit être au moins 1.',
+                ]);
+            }
+
+            $idPlat = (int) $plat['id'];
+            if (! isset($quantitesParPlat[$idPlat])) {
+                $quantitesParPlat[$idPlat] = 0;
+            }
+            $quantitesParPlat[$idPlat] += $quantite;
+
+            if ($quantitesParPlat[$idPlat] > Gargote::$quantiteMax) {
+                throw new RegleMetierException(
+                    "Quantité maximale dépassée pour {$plat['nom']}.",
+                    ["lignes.$i.quantite" => "Maximum " . Gargote::$quantiteMax . " par plat."],
+                    422
+                );
+            }
+
             $lignesPretes[] = [
-                'id_plat'       => (int) $plat['id'],
-                'quantite'      => (int) ($ligne['quantite'] ?? 1),
+                'id_plat'       => $idPlat,
+                'quantite'      => $quantite,
                 'prix_unitaire' => (int) $plat['prix'],
             ];
+        }
+
+        if ($numeroTable > 0) {
+            $commandeModel = model(CommandeModel::class);
+            $tableOccupee = $commandeModel
+                ->where('numero_table', $numeroTable)
+                ->where('statut', 'en_cours')
+                ->first();
+            
+            if ($tableOccupee) {
+                throw new RegleMetierException(
+                    "La table $numeroTable est déjà occupée.",
+                    ['numero_table' => 'Cette table a déjà une commande en cours.'],
+                    409
+                );
+            }
         }
 
         // --- Enregistrement : tout ou rien (transaction) -------------------
@@ -80,5 +134,37 @@ class CommandeService
         }
 
         return (int) $idCommande;
+    }
+
+    public const TRANSITIONS = [
+        'en_cours' => ['en_preparation'],
+        'en_preparation' => ['servie'],
+        'servie' => ['payee'],
+        'payee' => [],
+    ];
+
+    public function changerStatut(int $idCommande, string $nouveauStatut): array
+    {
+        $commandeModel = model(CommandeModel::class);
+        $commande = $commandeModel->find($idCommande);
+
+        if (! $commande) {
+            throw new RegleMetierException('Commande introuvable.', [], 404);
+        }
+
+        $statutActuel = $commande['statut'];
+        $transitionsPossibles = self::TRANSITIONS[$statutActuel] ?? [];
+
+        if (! in_array($nouveauStatut, $transitionsPossibles)) {
+            throw new RegleMetierException(
+                "Transition impossible de {$statutActuel} vers {$nouveauStatut}.",
+                ['statut' => 'Statut non autorisé.'],
+                422
+            );
+        }
+
+        $commandeModel->update($idCommande, ['statut' => $nouveauStatut]);
+
+        return $commandeModel->find($idCommande);
     }
 }

@@ -9,29 +9,42 @@ class CommandeModel extends Model
     protected $table         = 'commande';
     protected $primaryKey    = 'id';
     protected $returnType    = 'array';
-    protected $allowedFields = ['numero_table', 'date_commande'];
+    protected $allowedFields = ['numero_table', 'date_commande', 'id_serveur', 'statut', 'mode_paiement', 'date_paiement'];
 
     // PostgreSQL renvoie les nombres sous forme de texte : on les convertit.
     protected array $casts = [
-        'id'           => 'int',
-        'numero_table' => 'int',
-        'nb_lignes'    => 'int',
-        'total'        => 'int',
+        'id'            => 'int',
+        'numero_table'  => 'int',
+        'id_serveur'    => 'int',
+        'nb_lignes'     => 'int',
+        'total'         => 'int',
+        'date_commande' => 'datetime',
+        'date_paiement' => 'datetime',
     ];
 
     /**
      * Toutes les commandes, de la plus récente à la plus ancienne,
      * avec leur montant total calculé en SQL.
+     * Filtres optionnels : statut, date (YYYY-MM-DD)
      */
-    public function listerAvecTotal(): array
+    public function listerAvecTotal(?string $statut = null, ?string $date = null): array
     {
-        return $this->select('commande.id, commande.date_commande, commande.numero_table')
+        $query = $this->select('commande.id, commande.date_commande, commande.numero_table, commande.statut, commande.id_serveur')
             ->select('COUNT(commande_ligne.id) AS nb_lignes')
             ->select('COALESCE(SUM(commande_ligne.quantite * commande_ligne.prix_unitaire), 0) AS total')
             ->join('commande_ligne', 'commande_ligne.id_commande = commande.id', 'left')
             ->groupBy('commande.id')
-            ->orderBy('commande.date_commande', 'DESC')
-            ->findAll();
+            ->orderBy('commande.date_commande', 'DESC');
+
+        if ($statut !== null) {
+            $query->where('commande.statut', $statut);
+        }
+
+        if ($date !== null) {
+            $query->where('DATE(commande.date_commande)', $date);
+        }
+
+        return $query->findAll();
     }
 
     /** Une commande avec ses lignes (et le nom des plats). */

@@ -11,7 +11,10 @@ class Commandes extends ApiController
     /** GET /api/commandes */
     public function index()
     {
-        return $this->respond(model(CommandeModel::class)->listerAvecTotal());
+        $statut = $this->request->getGet('statut');
+        $date = $this->request->getGet('date');
+        
+        return $this->respond(model(CommandeModel::class)->listerAvecTotal($statut, $date));
     }
 
     /** GET /api/commandes/{id} — la commande et ses lignes */
@@ -19,7 +22,14 @@ class Commandes extends ApiController
     {
         $commande = model(CommandeModel::class)->detail((int) $id);
 
-        return $commande ? $this->respond($commande) : $this->erreur("Commande $id introuvable.", 404);
+        if (! $commande) {
+            return $this->erreur("Commande $id introuvable.", 404);
+        }
+
+        $service = new CommandeService();
+        $commande['transitions_possibles'] = $service::TRANSITIONS[$commande['statut']] ?? [];
+
+        return $this->respond($commande);
     }
 
     /**
@@ -39,5 +49,23 @@ class Commandes extends ApiController
         }
 
         return $this->respondCreated(model(CommandeModel::class)->detail($id));
+    }
+
+    /** PUT /api/commandes/{id}/statut */
+    public function changerStatut($id = null)
+    {
+        $donnees = $this->donneesJson();
+        $nouveauStatut = $donnees['statut'] ?? null;
+
+        if (! $nouveauStatut) {
+            return $this->erreurValidation(['statut' => 'Le statut est obligatoire.']);
+        }
+
+        try {
+            $commande = (new CommandeService())->changerStatut((int) $id, $nouveauStatut);
+            return $this->respond($commande);
+        } catch (RegleMetierException $e) {
+            return $this->erreurMetier($e);
+        }
     }
 }
