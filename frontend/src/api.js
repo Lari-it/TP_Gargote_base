@@ -69,4 +69,12 @@ export const api = {
   commandes: {
     changerStatut: (id, statut) => requete('PUT', `/commandes/${id}/statut`, { statut }),
   },
+
+  stock: {
+    lister: () => requete('GET', '/stock'),
+  },
+
+  stats: {
+    obtenir: () => requete('GET', '/stats'),
+  },
 }

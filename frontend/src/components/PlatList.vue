@@ -5,6 +5,7 @@ import { ariary, parCategorie } from '../utils/format'
 // Données reçues du parent
 const props = defineProps({
   plats: { type: Array, required: true },
+  portions: { type: Object, default: () => ({}) },
 })
 
 // Événements envoyés au parent
@@ -24,6 +25,7 @@ const groupes = computed(() => parCategorie(props.plats))
           <div class="plat-info">
             <span class="plat-nom">{{ plat.nom }}</span>
             <span v-if="plat.description" class="plat-description">{{ plat.description }}</span>
+            <span v-if="portions[plat.id]" class="plat-portions">~{{ Math.floor(portions[plat.id]) }} portions</span>
           </div>
           <span class="plat-pointilles" aria-hidden="true"></span>
           <span class="plat-prix">{{ ariary(plat.prix) }}</span>

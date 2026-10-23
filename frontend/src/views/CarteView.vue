@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { api } from '../api'
 import PlatList from '../components/PlatList.vue'
 import PlatForm from '../components/PlatForm.vue'
@@ -7,14 +7,24 @@ import PlatDuJour from '../components/PlatDuJour.vue'
 
 const plats = ref([])
 const categories = ref([])
-const platSelectionne = ref(null) // plat en cours de modification
-const message = ref(null)         // { type: 'succes' | 'erreur', texte }
+const stock = ref([])
+const platSelectionne = ref(null)
+const message = ref(null)
+
+const portions = computed(() => {
+  const result = {}
+  stock.value.forEach(item => {
+    result[item.id] = item.stock
+  })
+  return result
+})
 
 async function charger() {
   try {
-    ;[plats.value, categories.value] = await Promise.all([
+    ;[plats.value, categories.value, stock.value] = await Promise.all([
       api.plats.lister(),
       api.categories.lister(),
+      api.stock.lister(),
     ])
   } catch (e) {
     message.value = { type: 'erreur', texte: 'Impossible de charger la carte : ' + e.message }
@@ -57,7 +67,7 @@ onMounted(charger)
   <PlatDuJour :modifiable="true" :plats="plats" />
 
   <div class="grille">
-    <PlatList :plats="plats" @modifier="platSelectionne = $event" @supprimer="supprimer" @basculer="basculer" />
+    <PlatList :plats="plats" :portions="portions" @modifier="platSelectionne = $event" @supprimer="supprimer" @basculer="basculer" />
 
     <PlatForm
       :plat="platSelectionne"
